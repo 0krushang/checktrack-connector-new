@@ -1,3 +1,4 @@
+from frappe import conf
 import frappe
 import jwt
 import requests
@@ -16,7 +17,7 @@ from frappe.utils import now_datetime, add_to_date
 from frappe.utils.data import get_datetime
 
 # Replace with your actual JWT secret from Node.js app
-JWT_SECRET = "e6H9QQMGBx33KaOd" 
+JWT_SECRET = conf.get("jwt_secret")
 JWT_ALGORITHM = "HS256" # Or whatever your Node.js app uses
 
 def handle_cors_preflight():
