@@ -18,6 +18,7 @@ from frappe.utils.data import get_datetime
 
 # Replace with your actual JWT secret from Node.js app
 JWT_SECRET = conf.get("jwt_secret")
+JWT_AUDIENCE = conf.get("jwt_audience")
 JWT_ALGORITHM = "HS256" # Or whatever your Node.js app uses
 
 def handle_cors_preflight():
@@ -890,7 +891,7 @@ def update_related_tasks(doc, method):
 def authenticate_with_jwt_and_get_frappe_token(jwt_token):
     try:
         # 1. Verify and decode the JWT
-        decoded_jwt = jwt.decode(jwt_token, JWT_SECRET, algorithms=[JWT_ALGORITHM], audience="app.checktrack.dev")
+        decoded_jwt = jwt.decode(jwt_token, JWT_SECRET, algorithms=[JWT_ALGORITHM], audience=JWT_AUDIENCE)
 
         # Extract user identification from JWT
         user_email = decoded_jwt.get('email') 
