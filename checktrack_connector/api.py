@@ -734,7 +734,8 @@ def get_tasks_for_user(assign_to=None, employee_id=None, extra_filters=None, pag
         or_filters=or_filters,
         fields=["*"],
         start=start,
-        page_length=page_size
+        page_length=page_size,
+        order_by="due_date ASC, creation DESC"
     )
 
     # Remove duplicates by task name (if needed)
