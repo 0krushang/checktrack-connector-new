@@ -843,14 +843,18 @@ def update_mongodb_tenant_flag(tenant_id, access_token):
             "Authorization": f"Bearer {access_token}",
             "Content-Type": "application/json"
         }
+
+        site_url = get_url()
+        
         payload = {
-            "isFrappeIntegrated": True
+            "isFrappeIntegrated": True,
+            "frappeAppUrl": site_url
         }
 
         response = requests.patch(tenant_url, headers=headers, json=payload)
 
         if response.status_code in [200, 204]:
-            frappe.logger().info(f"CheckTrack: Tenant {tenant_id} updated with isFrappeIntegrated = true")
+            frappe.logger().info(f"CheckTrack: Tenant {tenant_id} updated with isFrappeIntegrated = true and frappeAppUrl = {site_url}")
         else:
             frappe.logger().warn(f"CheckTrack: Failed to update tenant {tenant_id}. Status: {response.status_code}, Response: {response.text}")
 
