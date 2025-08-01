@@ -52,7 +52,7 @@ def assign_all_roles_to_user(user_email):
         frappe.throw(f"Failed to assign roles: {str(e)}")
 
 @frappe.whitelist()
-def automated_import_users(tenant_id=None):
+def automated_import_users(tenant_id=None, integration_email=None):
     try:
         if not tenant_id:
             return {"status": "error", "message": "tenant_id is required"}
@@ -63,21 +63,44 @@ def automated_import_users(tenant_id=None):
         if not team_members:
             return {"status": "error", "message": "No team members found for the provided tenant_id"}
 
-        # Step 2: Prepare CSV data
+        # Step 2: Prepare CSV data - Skip the integration email
         data = [
             ["email", "first_name", "last_name", "user_type", "roles.role", "enabled", "send_welcome_email"]
         ]
         
+        skipped_count = 0
         for tm in team_members:
+            # Skip if this email matches the integration email
+            if integration_email and tm.work_email.lower().strip() == integration_email.lower().strip():
+                skipped_count += 1
+                frappe.log_error(f"Skipping integration email: {tm.work_email}", "User Import - Skipped Integration Email")
+                continue
+                
+            # Validate email before adding to import data
+            if not tm.work_email or not tm.work_email.strip():
+                frappe.log_error(f"Skipping team member with empty email: {tm}", "User Import - Empty Email")
+                continue
+                
             data.append([
-                tm.work_email,
-                tm.first_name,
-                tm.last_name,
+                tm.work_email.strip(),
+                tm.first_name or "",
+                tm.last_name or "",
                 "System User",
                 "System Manager",
                 1,
                 0
             ])
+
+        # Check if we have any data to import (excluding header)
+        if len(data) <= 1:
+            frappe.log_error(f"No users to import. Total team members: {len(team_members)}, Skipped: {skipped_count}, Integration email: {integration_email}", "User Import - No Data")
+            return {
+                "status": "warning",
+                "message": f"No users to import after skipping integration email(s). Skipped {skipped_count} email(s)."
+            }
+        
+        # Log the data being imported for debugging
+        frappe.log_error(f"Importing {len(data)-1} users (excluding header). Data: {data}", "User Import - Data Debug")
 
         # Step 3: Convert to CSV in-memory
         csv_buffer = io.StringIO()
@@ -116,10 +139,14 @@ def automated_import_users(tenant_id=None):
 
         # Step 7: Check import status
         status_info = get_import_status(import_doc.name)
+        
+        # Log the import status for debugging
+        frappe.log_error(f"Import status: {status_info}", "User Import Status Debug")
 
         if status_info.get("status") == "Success":
 
-            new_user_emails = [tm["work_email"] for tm in team_members]
+            # Filter out the integration email from the list of users to process
+            new_user_emails = [tm["work_email"] for tm in team_members if not (integration_email and tm["work_email"].lower().strip() == integration_email.lower().strip())]
             created_permission_ids = []
             failed_permissions = []
 
@@ -164,14 +191,24 @@ def automated_import_users(tenant_id=None):
             
             frappe.db.commit()
 
+            success_message = f"Imported data into User from file {file_doc.file_url}"
+            if skipped_count > 0:
+                success_message += f" (Skipped {skipped_count} integration email(s))"
+            
             return {
                 "status": "success",
-                "message": f"Imported data into User from file {file_doc.file_url}"
+                "message": success_message,
+                "skipped_count": skipped_count
             }
         else:
+            error_message = f"Import failed with status: {status_info.get('status')}"
+            if status_info.get("messages"):
+                error_message += f" - Messages: {status_info.get('messages')}"
+            
+            frappe.log_error(f"User import failed: {error_message}", "User Import Error")
             return {
                 "status": "error",
-                "message": "Import failed",
+                "message": error_message,
                 "details": status_info.get("messages")
             }
 
@@ -186,6 +223,12 @@ def automated_import_users(tenant_id=None):
 @frappe.whitelist()
 def import_project(tenant_id, tenant_prefix, access_token,company_name):
     try:
+        # Handle tenant_id if it's a dict (MongoDB ObjectId format)
+        if isinstance(tenant_id, dict) and '$oid' in tenant_id:
+            tenant_id = tenant_id['$oid']
+        else:
+            tenant_id = str(tenant_id)
+            
         limit = 1000
         filter_query = {"tenant._id": {"$oid": tenant_id}}
         url = f"{DATA_API_URL}/{tenant_prefix}_projects?filter={urllib.parse.quote(json.dumps(filter_query))}&pagesize={limit}"
@@ -351,6 +394,12 @@ def import_project(tenant_id, tenant_prefix, access_token,company_name):
 
 def get_task(tenant_id, tenant_prefix, access_token):
     try:
+        # Handle tenant_id if it's a dict (MongoDB ObjectId format)
+        if isinstance(tenant_id, dict) and '$oid' in tenant_id:
+            tenant_id = tenant_id['$oid']
+        else:
+            tenant_id = str(tenant_id)
+            
         all_tasks = []
         headers = {
             "Authorization": f"Bearer {access_token}",

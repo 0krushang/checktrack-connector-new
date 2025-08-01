@@ -151,45 +151,30 @@ frappe.ui.form.on('CheckTrack Integration', {
     },
 
     email: function(frm) {
-        if (frm.doc.email && frm.doc.password) {
-            frm.trigger('refresh');
-        }
+        frm.trigger('refresh');
     },
 
     password: function(frm) {
         frm.raw_password = frm.fields_dict.password.input.value;
 
-        if (frm.doc.email && frm.doc.password) {
-            frm.trigger('refresh');
-        }
+        frm.trigger('refresh');
     },
 });
 
 function check_tenant_exists(frm, callback) {
-    if (!frm.doc.email || !frm.doc.password) {
-        callback(false);
-        return;
-    }
-    frappe.call({
-        method: 'checktrack_connector.api.get_decrypted_password_for_doc',
-        args: {
-            docname: frm.doc.name
-        },
-        callback: function(r) {
-            let d_password = r.message;
-            // console.log("Decrypted password: ", d_password);
 
-            frappe.call({
-                method: 'checktrack_connector.api.check_tenant_exists',
-                args: {
-                    email: frm.doc.email,
-                    password: d_password || ""
-                },
-                callback: function (response) {
-                    var exists = response.message && response.message.exists;
-                    if (callback) callback(exists);
-                }
-            });
+    frappe.call({
+        method: 'checktrack_connector.api.check_tenant_exists',
+        args: {
+            email: frappe.session.user 
+        },
+        callback: function (response) {
+            var exists = response.message && response.message.exists;
+            if (callback) callback(exists);
+        },
+        error: function(err) {
+            console.error("Error checking tenant exists:", err);
+            if (callback) callback(false);
         }
     });
 }
