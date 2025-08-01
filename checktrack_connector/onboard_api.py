@@ -73,12 +73,10 @@ def automated_import_users(tenant_id=None, integration_email=None):
             # Skip if this email matches the integration email
             if integration_email and tm.work_email.lower().strip() == integration_email.lower().strip():
                 skipped_count += 1
-                frappe.log_error(f"Skipping integration email: {tm.work_email}", "User Import - Skipped Integration Email")
                 continue
                 
             # Validate email before adding to import data
             if not tm.work_email or not tm.work_email.strip():
-                frappe.log_error(f"Skipping team member with empty email: {tm}", "User Import - Empty Email")
                 continue
                 
             data.append([
@@ -93,14 +91,12 @@ def automated_import_users(tenant_id=None, integration_email=None):
 
         # Check if we have any data to import (excluding header)
         if len(data) <= 1:
-            frappe.log_error(f"No users to import. Total team members: {len(team_members)}, Skipped: {skipped_count}, Integration email: {integration_email}", "User Import - No Data")
             return {
                 "status": "warning",
                 "message": f"No users to import after skipping integration email(s). Skipped {skipped_count} email(s)."
             }
         
-        # Log the data being imported for debugging
-        frappe.log_error(f"Importing {len(data)-1} users (excluding header). Data: {data}", "User Import - Data Debug")
+
 
         # Step 3: Convert to CSV in-memory
         csv_buffer = io.StringIO()
@@ -140,8 +136,7 @@ def automated_import_users(tenant_id=None, integration_email=None):
         # Step 7: Check import status
         status_info = get_import_status(import_doc.name)
         
-        # Log the import status for debugging
-        frappe.log_error(f"Import status: {status_info}", "User Import Status Debug")
+
 
         if status_info.get("status") == "Success":
 
@@ -180,7 +175,7 @@ def automated_import_users(tenant_id=None, integration_email=None):
                     try:
                         frappe.delete_doc("User Permission", perm_id, ignore_permissions=True)
                     except Exception as del_err:
-                        frappe.log_error(frappe.get_traceback(), f"Rollback failed for User Permission: {perm_id}")
+                        pass
     
                 frappe.db.commit()
                 return {
@@ -205,7 +200,6 @@ def automated_import_users(tenant_id=None, integration_email=None):
             if status_info.get("messages"):
                 error_message += f" - Messages: {status_info.get('messages')}"
             
-            frappe.log_error(f"User import failed: {error_message}", "User Import Error")
             return {
                 "status": "error",
                 "message": error_message,
@@ -213,7 +207,6 @@ def automated_import_users(tenant_id=None, integration_email=None):
             }
 
     except Exception as e:
-        frappe.log_error(frappe.get_traceback(), "automated_import_users failed")
         return {
             "status": "error",
             "message": "An error occurred during user import",
@@ -384,7 +377,6 @@ def import_project(tenant_id, tenant_prefix, access_token,company_name):
             }
         
     except Exception as e:
-        frappe.log_error(frappe.get_traceback(), "automated_import_project failed")
         return {
             "status": "error",
             "message": "An error occurred during project import",
@@ -424,13 +416,11 @@ def get_task(tenant_id, tenant_prefix, access_token):
                 all_tasks.extend(batch)
                 page += 1
             else:
-                frappe.log_error(f"{response.status_code} - {response.text}", "Task page fetch failed")
                 break
 
         return all_tasks
 
     except Exception as e:
-        frappe.log_error(frappe.get_traceback(), "Tasks fetch failed")
         return {
             "status": "error",
             "message": "An error occurred during tasks fetch",

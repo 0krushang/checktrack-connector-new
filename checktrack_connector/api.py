@@ -68,7 +68,6 @@ def checktrack_integration(email, password="", isServerCall=False):
             frappe.throw("CheckTrack intergation failed. Invalid email or password.")
 
         auth_data = auth_response.json()
-        frappe.log_error(message=f"Auth response keys: {list(auth_data.keys())}", title="Auth Debug")
 
         access_token = auth_data.get("accessToken")
         
@@ -114,7 +113,6 @@ def checktrack_integration(email, password="", isServerCall=False):
                     tenant_id = str(tenant_id)
                 
             except Exception as e:
-                frappe.log_error(message=f"Error fetching user data for server call: {str(e)}", title="Server Call User Fetch Error")
                 frappe.throw(f"Error fetching user data: {str(e)}")
         else:
             # For regular calls, get tenant_id from auth response
@@ -123,7 +121,6 @@ def checktrack_integration(email, password="", isServerCall=False):
         
 
     except Exception as e:
-        frappe.log_error(message=f"Error checking CheckTrack integration: {str(e)}", title="CheckTrack Integration Error")
         return {"exists": False, "message": f"Error: {str(e)}"}
 
     try:
@@ -143,7 +140,6 @@ def checktrack_integration(email, password="", isServerCall=False):
 
     except Exception as e:
         frappe.msgprint(f"Error fetching tenant data: {str(e)}")
-        frappe.log_error(message=f"Error checking CheckTrack integration: {str(e)}", title="CheckTrack Integration Error")
         return {"exists": False, "message": f"Error: {str(e)}"}
 
     try:
@@ -182,10 +178,7 @@ def checktrack_integration(email, password="", isServerCall=False):
                     "message": f"Using and updated existing company: {company_name}",
                     "company_name": company_name
                 }
-                frappe.log_error(
-                    message=f"Company '{company_name}' already exists. Updated existing company data for integration.", 
-                    title="CheckTrack Integration - Existing Company Updated"
-                )
+
             except Exception as e:
                 frappe.msgprint(f"Error updating existing company: {str(e)}")
                 # If update fails, just use existing company without update
@@ -195,10 +188,7 @@ def checktrack_integration(email, password="", isServerCall=False):
                     "message": f"Using existing company: {company_name} (update failed: {str(e)})",
                     "company_name": company_name
                 }
-                frappe.log_error(
-                    message=f"Company '{company_name}' exists but update failed: {str(e)}. Using existing company as-is.", 
-                    title="CheckTrack Integration - Existing Company"
-                )
+
         else:
             # Create new company
             try:
@@ -749,7 +739,6 @@ def check_tenant_exists(email):
             return {"exists": False, "message": "Failed to get access token."}
 
     except Exception as e:
-        frappe.log_error(message=f"Error authenticating with CheckTrack: {str(e)}", title="CheckTrack Authentication Error")
         return {"exists": False, "message": f"Authentication error: {str(e)}"}
 
     # Step 2: Use the passed email to look up Employee, Company, tenant_id, etc.
@@ -796,7 +785,6 @@ def check_tenant_exists(email):
             return {"exists": False, "message": "Tenant is not integrated with Frappe."}
             
     except Exception as e:
-        frappe.log_error(message=f"Error checking tenant integration: {str(e)}", title="Tenant Integration Check Error")
         return {"exists": False, "message": f"Error checking integration: {str(e)}"}
 
 @frappe.whitelist()
@@ -908,7 +896,6 @@ def get_specific_doc_data(doctype, name=None, filters=None):
             expanded_doc = expand_links(full_doc, doctype)
             return {"data": expanded_doc}
         except Exception as e:
-            frappe.log_error(f"Error fetching specific document: {str(e)}")
             return {"message": f"Error fetching specific document: {str(e)}"}
     else:
         filters = json.loads(filters) if filters else {}
@@ -1098,7 +1085,6 @@ def authenticate_with_jwt_and_get_frappe_token(jwt_token):
     except jwt.InvalidTokenError as e:
         frappe.throw(f"Invalid JWT: {e}")
     except Exception as e:
-        frappe.log_error(frappe.get_traceback(), "JWT Authentication Error")
         frappe.throw(f"An error occurred during authentication: {e}")
 
 @frappe.whitelist(allow_guest=True)
