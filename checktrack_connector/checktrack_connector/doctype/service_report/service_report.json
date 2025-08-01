@@ -267,7 +267,7 @@
    "fetch_from": "customer_id.customer_phone",
    "fetch_if_empty": 1,
    "fieldname": "phone",
-   "fieldtype": "Data",
+   "fieldtype": "Phone",
    "label": "Phone"
   },
   {
@@ -275,7 +275,8 @@
    "fetch_if_empty": 1,
    "fieldname": "email",
    "fieldtype": "Data",
-   "label": "Email"
+   "label": "Email",
+   "options": "Email"
   },
   {
    "fieldname": "signature",
@@ -335,8 +336,8 @@
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2025-06-12 15:59:42.273640",
- "modified_by": "da.1@yopmail.com",
+ "modified": "2025-08-01 12:15:21.371540",
+ "modified_by": "mz123@yopmail.com",
  "module": "checktrack_connector",
  "name": "Service Report",
  "naming_rule": "Expression",
