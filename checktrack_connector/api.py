@@ -952,6 +952,9 @@ def update_mongodb_tenant_flag(tenant_id, access_token):
 
         site_url = get_url()
         
+        if site_url.startswith("http://"):
+            site_url = site_url.replace("http://", "https://", 1)
+        
         payload = {
             "isFrappeIntegrated": True,
             "frappeAppUrl": site_url
