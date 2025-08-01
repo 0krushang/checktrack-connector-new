@@ -48,8 +48,8 @@ def checktrack_integration(email, password="", isServerCall=False):
     
     if isServerCall:
         # Use credentials from config for server calls
-        server_email = conf.get("checktrack_email")
-        server_password = conf.get("checktrack_password")
+        server_email = conf.get("checktrack_admin_email")
+        server_password = conf.get("checktrack_admin_password")
         auth_payload = {
             "email": server_email,
             "password": server_password
